@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CALL2IRAN GATEWAY"
+            android:textColor="@color/colorAccent"
+            android:textSize="20sp"
+            android:fontFamily="monospace"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingBottom="16dp" />
+
+        <!-- Settings Section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SETTINGS"
+            android:textColor="@color/textSecondary"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:paddingBottom="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Telnyx Phone Number"
+            android:textColor="@color/textPrimary"
+            android:textSize="14sp"
+            android:fontFamily="monospace" />
+
+        <EditText
+            android:id="@+id/editTelnyxNumber"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="+1XXXXXXXXXX"
+            android:textColor="@color/textPrimary"
+            android:textColorHint="@color/textSecondary"
+            android:fontFamily="monospace"
+            android:inputType="phone"
+            android:background="@color/surface"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Poll Interval (seconds)"
+            android:textColor="@color/textPrimary"
+            android:textSize="14sp"
+            android:fontFamily="monospace" />
+
+        <EditText
+            android:id="@+id/editPollInterval"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="30"
+            android:textColor="@color/textPrimary"
+            android:textColorHint="@color/textSecondary"
+            android:fontFamily="monospace"
+            android:inputType="number"
+            android:background="@color/surface"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Phone ID"
+            android:textColor="@color/textPrimary"
+            android:textSize="14sp"
+            android:fontFamily="monospace" />
+
+        <EditText
+            android:id="@+id/editPhoneId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="phone1"
+            android:textColor="@color/textPrimary"
+            android:textColorHint="@color/textSecondary"
+            android:fontFamily="monospace"
+            android:inputType="text"
+            android:background="@color/surface"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <Button
+                android:id="@+id/btnPickVoice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pick Voice File"
+                android:textColor="@color/textPrimary"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:id="@+id/txtVoiceFile"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="No file selected"
+                android:textColor="@color/textSecondary"
+                android:fontFamily="monospace"
+                android:textSize="12sp"
+                android:gravity="center_vertical"
+                android:paddingStart="12dp"
+                android:singleLine="true"
+                android:ellipsize="middle" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <CheckBox
+                android:id="@+id/chkTestMode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Test Mode"
+                android:textColor="@color/warningYellow"
+                android:fontFamily="monospace"
+                android:buttonTint="@color/warningYellow" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnToggleService"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="START SERVICE"
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:backgroundTint="@color/activeGreen"
+            android:layout_marginBottom="24dp" />
+
+        <Button
+            android:id="@+id/btnSetDefaultDialer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Set as Default Dialer"
+            android:textColor="@color/textPrimary"
+            android:fontFamily="monospace"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Status Section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="STATUS"
+            android:textColor="@color/textSecondary"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:paddingBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/surface"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="State:"
+                android:textColor="@color/textSecondary"
+                android:textSize="12sp"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:id="@+id/txtState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="IDLE"
+                android:textColor="@color/colorAccent"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:fontFamily="monospace"
+                android:paddingBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Last Poll:"
+                android:textColor="@color/textSecondary"
+                android:textSize="12sp"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:id="@+id/txtLastPoll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="-"
+                android:textColor="@color/textPrimary"
+                android:textSize="14sp"
+                android:fontFamily="monospace"
+                android:paddingBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Last Job:"
+                android:textColor="@color/textSecondary"
+                android:textSize="12sp"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:id="@+id/txtLastJob"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="-"
+                android:textColor="@color/textPrimary"
+                android:textSize="14sp"
+                android:fontFamily="monospace"
+                android:paddingBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Last Call Duration:"
+                android:textColor="@color/textSecondary"
+                android:textSize="12sp"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:id="@+id/txtLastDuration"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="-"
+                android:textColor="@color/textPrimary"
+                android:textSize="14sp"
+                android:fontFamily="monospace" />
+        </LinearLayout>
+
+        <!-- Error Log Section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ERROR LOG"
+            android:textColor="@color/errorRed"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:paddingBottom="8dp" />
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:background="@color/surface"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/txtErrorLog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No errors"
+                android:textColor="@color/errorRed"
+                android:textSize="11sp"
+                android:fontFamily="monospace" />
+        </ScrollView>
+
+    </LinearLayout>
+</ScrollView>
