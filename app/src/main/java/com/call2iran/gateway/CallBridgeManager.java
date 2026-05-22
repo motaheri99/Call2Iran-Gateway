@@ -27,7 +27,7 @@ public class CallBridgeManager {
     }
 
     private enum BridgePhase {
-        IDLE, WAITING_SCHEDULE, CALLING_IRAN, PLAYING_MESSAGE, WAITING_CONFIRMATION,
+        IDLE, CALLING_IRAN, PLAYING_MESSAGE, WAITING_CONFIRMATION,
         HOLDING_IRAN, CALLING_INTL, MERGING, BRIDGED, ENDING
     }
 
@@ -47,7 +47,6 @@ public class CallBridgeManager {
     private Runnable maxTimeRunnable;
     private Runnable iranTimeoutRunnable;
     private Runnable intlTimeoutRunnable;
-    private Runnable scheduleRunnable;
     private Runnable confirmationTimeoutRunnable;
     private AudioCaptureManager audioCaptureManager;
     private DTMFDecoder confirmationDecoder;
@@ -67,20 +66,7 @@ public class CallBridgeManager {
         this.bridgeStartTime = 0;
         this.finalDuration = 0;
 
-        if (job.getDelayMinutes() > 0) {
-            long delayMs = job.getDelayMinutes() * 60L * 1000L;
-            Log.d(TAG, "Scheduling call in " + job.getDelayMinutes() + " minutes");
-            phase = BridgePhase.WAITING_SCHEDULE;
-            notifyState(GatewayState.WAITING_SCHEDULE);
-
-            scheduleRunnable = () -> {
-                scheduleRunnable = null;
-                startCallingIran();
-            };
-            handler.postDelayed(scheduleRunnable, delayMs);
-        } else {
-            startCallingIran();
-        }
+        startCallingIran();
     }
 
     private void startCallingIran() {
@@ -494,8 +480,6 @@ public class CallBridgeManager {
         iranTimeoutRunnable = null;
         cancelTimeout(intlTimeoutRunnable);
         intlTimeoutRunnable = null;
-        cancelTimeout(scheduleRunnable);
-        scheduleRunnable = null;
         cancelTimeout(confirmationTimeoutRunnable);
         confirmationTimeoutRunnable = null;
 

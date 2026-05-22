@@ -4,13 +4,11 @@ public class JobData {
     private final String iranNumber;
     private final String intlNumber;
     private final int maxMinutes;
-    private final int delayMinutes;
 
-    public JobData(String iranNumber, String intlNumber, int maxMinutes, int delayMinutes) {
+    public JobData(String iranNumber, String intlNumber, int maxMinutes) {
         this.iranNumber = iranNumber;
         this.intlNumber = intlNumber;
         this.maxMinutes = maxMinutes;
-        this.delayMinutes = delayMinutes;
     }
 
     public String getIranNumber() {
@@ -25,17 +23,13 @@ public class JobData {
         return maxMinutes;
     }
 
-    public int getDelayMinutes() {
-        return delayMinutes;
-    }
-
     public String getIntlDialNumber() {
         return "00" + intlNumber;
     }
 
     @Override
     public String toString() {
-        return iranNumber + " <-> " + intlNumber + " (" + maxMinutes + "min, delay=" + delayMinutes + "min)";
+        return iranNumber + " <-> " + intlNumber + " (" + maxMinutes + "min)";
     }
 
     public static JobData parse(String dtmfString) {
@@ -53,7 +47,7 @@ public class JobData {
         }
 
         String[] parts = data.split("\\*");
-        if (parts.length != 4) {
+        if (parts.length != 3) {
             return null;
         }
 
@@ -61,16 +55,12 @@ public class JobData {
             String iranNumber = parts[0];
             String intlNumber = parts[1];
             int maxMinutes = Integer.parseInt(parts[2]);
-            int delayMinutes = Integer.parseInt(parts[3]);
 
-            if (iranNumber.isEmpty() || intlNumber.isEmpty() || maxMinutes <= 0 || delayMinutes < 0) {
-                return null;
-            }
-            if (delayMinutes > 1440) {
+            if (iranNumber.isEmpty() || intlNumber.isEmpty() || maxMinutes <= 0) {
                 return null;
             }
 
-            return new JobData(iranNumber, intlNumber, maxMinutes, delayMinutes);
+            return new JobData(iranNumber, intlNumber, maxMinutes);
         } catch (NumberFormatException e) {
             return null;
         }

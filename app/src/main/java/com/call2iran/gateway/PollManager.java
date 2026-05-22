@@ -50,7 +50,7 @@ public class PollManager {
             Log.d(TAG, "Test mode: simulating poll");
             handler.postDelayed(() -> {
                 pollInProgress = false;
-                JobData fakeJob = JobData.parse("09121234567*14165551234*2*0");
+                JobData fakeJob = JobData.parse("09121234567*14165551234*2");
                 callback.onPollResult(fakeJob, null);
             }, 1000);
             return;

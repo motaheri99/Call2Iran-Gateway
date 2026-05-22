@@ -7,7 +7,6 @@ public enum GatewayState {
     WAITING_CONFIRMATION("WAITING_CONFIRMATION"),
     CALLING_INTL("CALLING_INTL"),
     BRIDGED("BRIDGED"),
-    WAITING_SCHEDULE("WAITING_SCHEDULE"),
     CALL_ENDED("CALL_ENDED");
 
     private final String label;
