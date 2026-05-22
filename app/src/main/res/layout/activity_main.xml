@@ -13,7 +13,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="CALL2IRAN GATEWAY"
+            android:text="CALL IRAN GATEWAY"
             android:textColor="@color/colorAccent"
             android:textSize="20sp"
             android:fontFamily="monospace"

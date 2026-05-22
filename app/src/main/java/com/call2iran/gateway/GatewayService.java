@@ -66,7 +66,7 @@ public class GatewayService extends Service {
         createNotificationChannel();
 
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Call2Iran::GatewayWakeLock");
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "CallIran::GatewayWakeLock");
 
         Log.d(TAG, "GatewayService created");
     }
@@ -269,7 +269,7 @@ public class GatewayService extends Service {
     private void createNotificationChannel() {
         NotificationChannel channel = new NotificationChannel(
                 CHANNEL_ID,
-                "Call2Iran Gateway",
+                "Call Iran Gateway",
                 NotificationManager.IMPORTANCE_HIGH
         );
         channel.setDescription("Gateway service status");
@@ -285,7 +285,7 @@ public class GatewayService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
         return new Notification.Builder(this, CHANNEL_ID)
-                .setContentTitle("Call2Iran Gateway")
+                .setContentTitle("Call Iran Gateway")
                 .setContentText("State: " + currentState.getLabel())
                 .setSmallIcon(android.R.drawable.stat_sys_phone_call)
                 .setContentIntent(pendingIntent)
