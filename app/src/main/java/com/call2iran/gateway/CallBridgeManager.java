@@ -18,6 +18,7 @@ public class CallBridgeManager {
     private static final String TAG = "CallBridge";
     private static final long IRAN_ANSWER_TIMEOUT_MS = 60000;
     private static final long INTL_ANSWER_TIMEOUT_MS = 60000;
+    private static final long CONFIRMATION_TIMEOUT_MS = 20000;
     private static final int WARNING_BEEP_BEFORE_END_SEC = 30;
 
     public interface BridgeCallback {
@@ -26,8 +27,8 @@ public class CallBridgeManager {
     }
 
     private enum BridgePhase {
-        IDLE, WAITING_SCHEDULE, CALLING_IRAN, PLAYING_MESSAGE, HOLDING_IRAN,
-        CALLING_INTL, MERGING, BRIDGED, ENDING
+        IDLE, WAITING_SCHEDULE, CALLING_IRAN, PLAYING_MESSAGE, WAITING_CONFIRMATION,
+        HOLDING_IRAN, CALLING_INTL, MERGING, BRIDGED, ENDING
     }
 
     private final Context context;
@@ -47,6 +48,9 @@ public class CallBridgeManager {
     private Runnable iranTimeoutRunnable;
     private Runnable intlTimeoutRunnable;
     private Runnable scheduleRunnable;
+    private Runnable confirmationTimeoutRunnable;
+    private AudioCaptureManager audioCaptureManager;
+    private DTMFDecoder confirmationDecoder;
 
     public CallBridgeManager(Context context, AppSettings settings) {
         this.context = context;
@@ -97,7 +101,11 @@ public class CallBridgeManager {
             Log.d(TAG, "Test mode: simulating Iran call connect");
             handler.postDelayed(() -> {
                 phase = BridgePhase.PLAYING_MESSAGE;
-                handler.postDelayed(this::onIranMessagePlayed, 2000);
+                handler.postDelayed(() -> {
+                    onIranMessagePlayed();
+                    // In test mode, simulate confirmation after 1 second
+                    handler.postDelayed(() -> onConfirmationReceived('1'), 1000);
+                }, 2000);
             }, 2000);
             return;
         }
@@ -117,8 +125,10 @@ public class CallBridgeManager {
         cancelTimeout(iranTimeoutRunnable);
         iranTimeoutRunnable = null;
 
-        Log.d(TAG, "Iran call connected, playing message");
+        Log.d(TAG, "Iran call connected, enabling speakerphone and playing message");
         phase = BridgePhase.PLAYING_MESSAGE;
+
+        setSpeakerphone(true);
 
         playHoldMessage(() -> {
             onIranMessagePlayed();
@@ -126,7 +136,40 @@ public class CallBridgeManager {
     }
 
     private void onIranMessagePlayed() {
-        Log.d(TAG, "Message played, putting Iran on hold and calling intl");
+        Log.d(TAG, "Message played, waiting for DTMF confirmation");
+        phase = BridgePhase.WAITING_CONFIRMATION;
+        notifyState(GatewayState.WAITING_CONFIRMATION);
+
+        confirmationDecoder = new DTMFDecoder();
+        confirmationDecoder.setDetectSingleDigit(true);
+        confirmationDecoder.setSingleDigitListener(digit -> {
+            handler.post(() -> onConfirmationReceived(digit));
+        });
+
+        audioCaptureManager = new AudioCaptureManager(confirmationDecoder);
+        if (!audioCaptureManager.startCapture()) {
+            Log.e(TAG, "Failed to start audio capture for confirmation");
+            setSpeakerphone(false);
+            onConfirmationReceived('1');
+            return;
+        }
+
+        confirmationTimeoutRunnable = () -> {
+            Log.w(TAG, "Iran side did not confirm - possible voicemail");
+            onConfirmationTimeout();
+        };
+        handler.postDelayed(confirmationTimeoutRunnable, CONFIRMATION_TIMEOUT_MS);
+    }
+
+    private void onConfirmationReceived(char digit) {
+        if (phase != BridgePhase.WAITING_CONFIRMATION) return;
+
+        Log.d(TAG, "DTMF confirmation received: " + digit);
+
+        cancelTimeout(confirmationTimeoutRunnable);
+        confirmationTimeoutRunnable = null;
+        stopConfirmationCapture();
+        setSpeakerphone(false);
 
         if (!settings.isTestMode() && iranCall != null) {
             phase = BridgePhase.HOLDING_IRAN;
@@ -137,6 +180,33 @@ public class CallBridgeManager {
         }
 
         handler.postDelayed(this::startCallingIntl, 500);
+    }
+
+    private void onConfirmationTimeout() {
+        if (phase != BridgePhase.WAITING_CONFIRMATION) return;
+
+        confirmationTimeoutRunnable = null;
+        stopConfirmationCapture();
+        setSpeakerphone(false);
+
+        cleanup();
+        finishBridge(0, "Iran side did not confirm - possible voicemail");
+    }
+
+    private void stopConfirmationCapture() {
+        if (audioCaptureManager != null) {
+            audioCaptureManager.stopCapture();
+            audioCaptureManager = null;
+        }
+        confirmationDecoder = null;
+    }
+
+    private void setSpeakerphone(boolean on) {
+        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        if (audioManager != null) {
+            audioManager.setSpeakerphoneOn(on);
+            Log.d(TAG, "Speakerphone " + (on ? "ON" : "OFF"));
+        }
     }
 
     private void startCallingIntl() {
@@ -256,6 +326,19 @@ public class CallBridgeManager {
                         iranTimeoutRunnable = null;
                         cleanup();
                         finishBridge(0, "Iran call failed");
+                    }
+                    break;
+
+                case PLAYING_MESSAGE:
+                case WAITING_CONFIRMATION:
+                    if (state == Call.STATE_DISCONNECTED && call == iranCall) {
+                        Log.d(TAG, "Iran call dropped during confirmation phase");
+                        cancelTimeout(confirmationTimeoutRunnable);
+                        confirmationTimeoutRunnable = null;
+                        stopConfirmationCapture();
+                        setSpeakerphone(false);
+                        cleanup();
+                        finishBridge(0, "Iran call dropped during confirmation");
                     }
                     break;
 
@@ -413,7 +496,10 @@ public class CallBridgeManager {
         intlTimeoutRunnable = null;
         cancelTimeout(scheduleRunnable);
         scheduleRunnable = null;
+        cancelTimeout(confirmationTimeoutRunnable);
+        confirmationTimeoutRunnable = null;
 
+        stopConfirmationCapture();
         releaseMediaPlayer();
 
         if (!settings.isTestMode()) {

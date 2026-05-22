@@ -23,6 +23,7 @@ public class DTMFDecoder {
     private int detectionCount = 0;
     private int silenceCount = 0;
     private boolean digitAccepted = false;
+    private boolean singleDigitMode = false;
 
     private final StringBuilder buffer = new StringBuilder();
 
@@ -30,10 +31,23 @@ public class DTMFDecoder {
         void onMessageReceived(String message);
     }
 
+    public interface SingleDigitListener {
+        void onDigitDetected(char digit);
+    }
+
     private MessageListener listener;
+    private SingleDigitListener singleDigitListener;
 
     public void setMessageListener(MessageListener listener) {
         this.listener = listener;
+    }
+
+    public void setSingleDigitListener(SingleDigitListener listener) {
+        this.singleDigitListener = listener;
+    }
+
+    public void setDetectSingleDigit(boolean enabled) {
+        this.singleDigitMode = enabled;
     }
 
     public void reset() {
@@ -169,6 +183,13 @@ public class DTMFDecoder {
     }
 
     private void onDigitDetected(char digit) {
+        if (singleDigitMode) {
+            if (singleDigitListener != null) {
+                singleDigitListener.onDigitDetected(digit);
+            }
+            return;
+        }
+
         if (digit == '#') {
             String message = buffer.toString();
             buffer.setLength(0);
