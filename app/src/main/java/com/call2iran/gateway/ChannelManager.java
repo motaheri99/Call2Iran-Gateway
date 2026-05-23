@@ -1,6 +1,9 @@
 package com.call2iran.gateway;
 
+import android.util.Log;
+
 public class ChannelManager {
+    private static final String TAG = "ChannelManager";
 
     public enum ActiveChannel { BALE, PHONE_POLLING }
 
@@ -40,9 +43,15 @@ public class ChannelManager {
         String token = settings.getBaleBotToken();
         String chatId = settings.getBaleChatId();
         String key = settings.getBaleEncryptionKey();
-        return token != null && !token.isEmpty()
+        boolean result = token != null && !token.isEmpty()
                 && chatId != null && !chatId.isEmpty()
                 && key != null && key.length() == 64;
+        if (!result) {
+            Log.e(TAG, "isBaleConfigured=false: tokenEmpty=" + (token == null || token.isEmpty())
+                    + " chatIdEmpty=" + (chatId == null || chatId.isEmpty())
+                    + " keyLen=" + (key != null ? key.length() : "null"));
+        }
+        return result;
     }
 
     public String getStatusText() {

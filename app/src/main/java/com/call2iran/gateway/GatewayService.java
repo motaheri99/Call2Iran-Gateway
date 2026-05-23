@@ -88,10 +88,19 @@ public class GatewayService extends Service {
         }
 
         // Start Bale client if configured
+        String bToken = settings.getBaleBotToken();
+        String bChat = settings.getBaleChatId();
+        String bKey = settings.getBaleEncryptionKey();
+        Log.e(TAG, "Bale config check: token=" + (bToken != null ? bToken.length() + " chars" : "null")
+                + " chatId=" + (bChat != null ? "'" + bChat + "'" : "null")
+                + " keyLen=" + (bKey != null ? bKey.length() : "null"));
+        Log.e(TAG, "isBaleConfigured=" + channelManager.isBaleConfigured());
+
         if (channelManager.isBaleConfigured()) {
             activeChannel = "Bale";
             setupBaleClient();
         } else {
+            Log.e(TAG, "Bale NOT configured — falling back to Phone polling");
             activeChannel = "Phone";
         }
 
@@ -107,6 +116,7 @@ public class GatewayService extends Service {
     }
 
     private void setupBaleClient() {
+        Log.e(TAG, "setupBaleClient called");
         baleClient.setJobListener((callId, targetPhone, callerPhone, maxMinutes) -> {
             Log.d(TAG, "Bale job received: " + callId);
             channelManager.onBaleMessageReceived();
@@ -205,7 +215,7 @@ public class GatewayService extends Service {
         Intent intent = new Intent(this, GatewayService.class);
         intent.setAction(ACTION_POLL_ALARM);
         PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.ELAPSED_REALTIME_WAKEUP,
@@ -219,7 +229,7 @@ public class GatewayService extends Service {
         Intent intent = new Intent(this, GatewayService.class);
         intent.setAction(ACTION_POLL_ALARM);
         PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_NO_CREATE);
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE);
         if (pendingIntent != null) {
             alarmManager.cancel(pendingIntent);
         }
@@ -364,7 +374,7 @@ public class GatewayService extends Service {
     private Notification buildNotification() {
         Intent intent = new Intent(this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
 
         String subtitle = "State: " + currentState.getLabel() + " | " + activeChannel;
 

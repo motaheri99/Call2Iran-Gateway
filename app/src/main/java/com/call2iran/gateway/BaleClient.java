@@ -55,14 +55,19 @@ public class BaleClient {
     }
 
     public void startPolling() {
-        if (polling.getAndSet(true)) return;
-        Log.d(TAG, "Starting Bale polling");
+        Log.e(TAG, "startPolling called, polling was=" + polling.get());
+        if (polling.getAndSet(true)) {
+            Log.e(TAG, "startPolling: already polling, skipping");
+            return;
+        }
+        Log.e(TAG, "Submitting pollLoop to executor");
         executor.submit(this::pollLoop);
     }
 
     public void stopPolling() {
-        Log.d(TAG, "Stopping Bale polling");
+        Log.e(TAG, "Stopping Bale polling");
         polling.set(false);
+        executor.shutdownNow();
     }
 
     public boolean isConnected() {
@@ -93,23 +98,26 @@ public class BaleClient {
     }
 
     private void pollLoop() {
-        Log.d(TAG, "Poll loop started");
+        Log.e(TAG, "Poll loop started on thread: " + Thread.currentThread().getName());
 
         while (polling.get()) {
             try {
                 String token = settings.getBaleBotToken();
                 if (token == null || token.isEmpty()) {
+                    Log.e(TAG, "Token is empty in poll loop, waiting...");
                     Thread.sleep(RETRY_DELAY_MS);
                     continue;
                 }
 
                 String urlStr = BASE_URL + token + "/getUpdates?offset=" + (lastUpdateId + 1) + "&timeout=30";
+                Log.e(TAG, "Calling getUpdates...");
                 HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
                 conn.setConnectTimeout(CONNECT_TIMEOUT);
                 conn.setReadTimeout(POLL_READ_TIMEOUT);
                 conn.setRequestMethod("GET");
 
                 int code = conn.getResponseCode();
+                Log.e(TAG, "getUpdates response: " + code);
                 if (code == 200) {
                     String body = readResponse(conn);
                     connected = true;
@@ -118,6 +126,7 @@ public class BaleClient {
                     if (json.optBoolean("ok")) {
                         JSONArray results = json.optJSONArray("result");
                         if (results != null && results.length() > 0) {
+                            Log.e(TAG, "Got " + results.length() + " updates");
                             for (int i = 0; i < results.length(); i++) {
                                 JSONObject update = results.getJSONObject(i);
                                 lastUpdateId = update.getLong("update_id");
@@ -126,22 +135,23 @@ public class BaleClient {
                         }
                     }
                 } else {
-                    Log.w(TAG, "getUpdates returned HTTP " + code);
+                    Log.e(TAG, "getUpdates returned HTTP " + code);
                     connected = false;
                     Thread.sleep(RETRY_DELAY_MS);
                 }
 
                 conn.disconnect();
             } catch (InterruptedException e) {
+                Log.e(TAG, "Poll loop interrupted");
                 break;
             } catch (Exception e) {
                 connected = false;
-                Log.e(TAG, "Poll error: " + e.getMessage());
+                Log.e(TAG, "Poll error: " + e.getMessage(), e);
                 try { Thread.sleep(RETRY_DELAY_MS); } catch (InterruptedException ie) { break; }
             }
         }
 
-        Log.d(TAG, "Poll loop ended");
+        Log.e(TAG, "Poll loop ended");
     }
 
     private void processUpdate(JSONObject update) {

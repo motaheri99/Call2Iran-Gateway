@@ -203,6 +203,11 @@ public class MainActivity extends Activity {
                     && !settings.getBaleChatId().isEmpty()
                     && settings.getBaleEncryptionKey().length() == 64;
 
+            android.util.Log.e("MainActivity", "toggleService: hasTelnyx=" + hasTelnyx
+                    + " hasBale=" + hasBale
+                    + " keyLen=" + settings.getBaleEncryptionKey().length()
+                    + " testMode=" + settings.isTestMode());
+
             if (!settings.isTestMode() && !hasTelnyx && !hasBale) {
                 Toast.makeText(this,
                         "Set Bale bot or Telnyx number (or enable Test Mode)",
