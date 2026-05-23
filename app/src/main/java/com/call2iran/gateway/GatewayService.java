@@ -97,6 +97,7 @@ public class GatewayService extends Service {
 
         if (channelManager.isBaleConfigured()) {
             logError("Bale configured — starting client");
+            channelManager.markStarted();
             activeChannel = "Bale";
             setupBaleClient();
         } else {

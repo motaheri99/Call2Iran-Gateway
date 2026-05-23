@@ -9,18 +9,29 @@ public class ChannelManager {
 
     private final AppSettings settings;
     private long lastBaleMessageTime = 0;
+    private long startedAt = 0;
 
     public ChannelManager(AppSettings settings) {
         this.settings = settings;
     }
 
+    public void markStarted() {
+        startedAt = System.currentTimeMillis();
+    }
+
     public ActiveChannel getActiveChannel() {
         if (!isBaleConfigured()) return ActiveChannel.PHONE_POLLING;
 
-        long elapsed = System.currentTimeMillis() - lastBaleMessageTime;
+        // If we never received a message yet, use the service start time
+        // as the reference — Bale is the default until the timeout expires
+        // without hearing anything
+        long referenceTime = lastBaleMessageTime > 0 ? lastBaleMessageTime : startedAt;
+        if (referenceTime == 0) return ActiveChannel.BALE;
+
+        long elapsed = System.currentTimeMillis() - referenceTime;
         long timeoutMs = getBaleTimeoutMinutes() * 60L * 1000L;
 
-        if (lastBaleMessageTime > 0 && elapsed < timeoutMs) {
+        if (elapsed < timeoutMs) {
             return ActiveChannel.BALE;
         }
 
