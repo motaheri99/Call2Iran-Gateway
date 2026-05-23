@@ -67,6 +67,8 @@ public class GatewayService extends Service {
         callBridgeManager = new CallBridgeManager(this, settings);
         channelManager = new ChannelManager(settings);
         baleClient = new BaleClient(settings);
+        baleClient.setLogListener(this::logError);
+        BaleNotificationListener.setLogListener(this::logError);
 
         createNotificationChannel();
 

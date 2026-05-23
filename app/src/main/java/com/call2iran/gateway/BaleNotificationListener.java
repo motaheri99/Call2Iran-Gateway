@@ -88,7 +88,6 @@ public class BaleNotificationListener extends NotificationListenerService {
     public void onNotificationPosted(StatusBarNotification sbn) {
         if (sbn == null) return;
         String pkg = sbn.getPackageName();
-        if (!BALE_PKG_1.equals(pkg) && !BALE_PKG_2.equals(pkg)) return;
 
         Notification notification = sbn.getNotification();
         if (notification == null) return;
@@ -104,9 +103,13 @@ public class BaleNotificationListener extends NotificationListenerService {
             }
         }
 
+        String preview = text.isEmpty() ? "(empty)" : text.substring(0, Math.min(text.length(), 30));
+        uiLog("notif from: " + pkg + " text: " + preview);
+
+        if (!BALE_PKG_1.equals(pkg) && !BALE_PKG_2.equals(pkg)) return;
         if (text.isEmpty()) return;
 
-        uiLog("notif: " + text.substring(0, Math.min(text.length(), 60)));
+        uiLog("BALE notif: " + text.substring(0, Math.min(text.length(), 60)));
 
         captureReplyAction(notification);
 
