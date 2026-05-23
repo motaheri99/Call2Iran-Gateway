@@ -91,16 +91,21 @@ public class GatewayService extends Service {
         String bToken = settings.getBaleBotToken();
         String bChat = settings.getBaleChatId();
         String bKey = settings.getBaleEncryptionKey();
-        Log.e(TAG, "Bale config check: token=" + (bToken != null ? bToken.length() + " chars" : "null")
-                + " chatId=" + (bChat != null ? "'" + bChat + "'" : "null")
-                + " keyLen=" + (bKey != null ? bKey.length() : "null"));
-        Log.e(TAG, "isBaleConfigured=" + channelManager.isBaleConfigured());
+        logError("Bale check: token=" + (bToken != null && !bToken.isEmpty() ? bToken.length() + " chars" : "EMPTY")
+                + " chatId=" + (bChat != null && !bChat.isEmpty() ? bChat : "EMPTY")
+                + " keyLen=" + (bKey != null ? bKey.length() : 0) + "/64");
 
         if (channelManager.isBaleConfigured()) {
+            logError("Bale configured — starting client");
             activeChannel = "Bale";
             setupBaleClient();
         } else {
-            Log.e(TAG, "Bale NOT configured — falling back to Phone polling");
+            String reason = "";
+            if (bToken == null || bToken.isEmpty()) reason += "token empty; ";
+            if (bChat == null || bChat.isEmpty()) reason += "chatId empty; ";
+            if (bKey == null) reason += "key null; ";
+            else if (bKey.length() != 64) reason += "key length is " + bKey.length() + " (need 64); ";
+            logError("Bale NOT configured: " + reason + "falling back to Phone");
             activeChannel = "Phone";
         }
 
@@ -116,7 +121,7 @@ public class GatewayService extends Service {
     }
 
     private void setupBaleClient() {
-        Log.e(TAG, "setupBaleClient called");
+        baleClient.setLogListener(this::logError);
         baleClient.setJobListener((callId, targetPhone, callerPhone, maxMinutes) -> {
             Log.d(TAG, "Bale job received: " + callId);
             channelManager.onBaleMessageReceived();

@@ -37,8 +37,13 @@ public class BaleClient {
     private long lastMessageTime = 0;
     private boolean connected = false;
 
+    public interface OnLogListener {
+        void onLog(String message);
+    }
+
     private OnJobReceivedListener jobListener;
     private Runnable onMessageCallback;
+    private OnLogListener logListener;
 
     public BaleClient(AppSettings settings) {
         this.settings = settings;
@@ -54,13 +59,23 @@ public class BaleClient {
         this.onMessageCallback = callback;
     }
 
+    public void setLogListener(OnLogListener listener) {
+        this.logListener = listener;
+    }
+
+    private void uiLog(String msg) {
+        Log.e(TAG, msg);
+        if (logListener != null) {
+            mainHandler.post(() -> logListener.onLog("Bale: " + msg));
+        }
+    }
+
     public void startPolling() {
-        Log.e(TAG, "startPolling called, polling was=" + polling.get());
+        uiLog("startPolling called");
         if (polling.getAndSet(true)) {
-            Log.e(TAG, "startPolling: already polling, skipping");
+            uiLog("already polling, skipping");
             return;
         }
-        Log.e(TAG, "Submitting pollLoop to executor");
         executor.submit(this::pollLoop);
     }
 
@@ -90,43 +105,45 @@ public class BaleClient {
                 String text = "REPORT:" + encrypted;
 
                 sendMessage(text);
-                Log.d(TAG, "Report sent for call " + callId);
+                uiLog("report sent for call " + callId);
             } catch (Exception e) {
-                Log.e(TAG, "Failed to send report: " + e.getMessage());
+                uiLog("failed to send report: " + e.getMessage());
             }
         });
     }
 
     private void pollLoop() {
-        Log.e(TAG, "Poll loop started on thread: " + Thread.currentThread().getName());
+        uiLog("polling started");
+        boolean firstConnect = true;
 
         while (polling.get()) {
             try {
                 String token = settings.getBaleBotToken();
                 if (token == null || token.isEmpty()) {
-                    Log.e(TAG, "Token is empty in poll loop, waiting...");
+                    uiLog("token empty in poll loop, waiting...");
                     Thread.sleep(RETRY_DELAY_MS);
                     continue;
                 }
 
                 String urlStr = BASE_URL + token + "/getUpdates?offset=" + (lastUpdateId + 1) + "&timeout=30";
-                Log.e(TAG, "Calling getUpdates...");
                 HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
                 conn.setConnectTimeout(CONNECT_TIMEOUT);
                 conn.setReadTimeout(POLL_READ_TIMEOUT);
                 conn.setRequestMethod("GET");
 
                 int code = conn.getResponseCode();
-                Log.e(TAG, "getUpdates response: " + code);
                 if (code == 200) {
                     String body = readResponse(conn);
                     connected = true;
+                    if (firstConnect) {
+                        uiLog("connected to server (HTTP 200)");
+                        firstConnect = false;
+                    }
                     JSONObject json = new JSONObject(body);
 
                     if (json.optBoolean("ok")) {
                         JSONArray results = json.optJSONArray("result");
                         if (results != null && results.length() > 0) {
-                            Log.e(TAG, "Got " + results.length() + " updates");
                             for (int i = 0; i < results.length(); i++) {
                                 JSONObject update = results.getJSONObject(i);
                                 lastUpdateId = update.getLong("update_id");
@@ -135,23 +152,24 @@ public class BaleClient {
                         }
                     }
                 } else {
-                    Log.e(TAG, "getUpdates returned HTTP " + code);
+                    uiLog("getUpdates HTTP " + code);
                     connected = false;
+                    firstConnect = true;
                     Thread.sleep(RETRY_DELAY_MS);
                 }
 
                 conn.disconnect();
             } catch (InterruptedException e) {
-                Log.e(TAG, "Poll loop interrupted");
                 break;
             } catch (Exception e) {
                 connected = false;
-                Log.e(TAG, "Poll error: " + e.getMessage(), e);
+                firstConnect = true;
+                uiLog("poll error: " + e.getMessage());
                 try { Thread.sleep(RETRY_DELAY_MS); } catch (InterruptedException ie) { break; }
             }
         }
 
-        Log.e(TAG, "Poll loop ended");
+        uiLog("polling stopped");
     }
 
     private void processUpdate(JSONObject update) {
@@ -176,12 +194,15 @@ public class BaleClient {
             }
 
             if (text.startsWith("JOB:")) {
+                uiLog("got JOB message");
                 handleJob(text.substring(4));
             } else if (text.startsWith("PING:")) {
-                Log.d(TAG, "PING received: " + text.substring(5));
+                uiLog("got PING");
+            } else {
+                uiLog("got message: " + text.substring(0, Math.min(text.length(), 30)));
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error processing update: " + e.getMessage());
+            uiLog("error processing update: " + e.getMessage());
         }
     }
 
@@ -189,7 +210,6 @@ public class BaleClient {
         try {
             String key = settings.getBaleEncryptionKey();
             String decrypted = CryptoUtils.decrypt(encryptedPayload, key);
-            Log.d(TAG, "Job decrypted: " + decrypted);
 
             JSONObject job = new JSONObject(decrypted);
             String callId = job.getString("callId");
@@ -197,11 +217,13 @@ public class BaleClient {
             String callerPhone = job.getString("callerPhone");
             int maxMinutes = job.getInt("maxMinutes");
 
+            uiLog("job decoded: " + targetPhone + " -> " + callerPhone);
+
             if (jobListener != null) {
                 mainHandler.post(() -> jobListener.onJobReceived(callId, targetPhone, callerPhone, maxMinutes));
             }
         } catch (Exception e) {
-            Log.e(TAG, "Failed to process job: " + e.getMessage());
+            uiLog("failed to process job: " + e.getMessage());
         }
     }
 
