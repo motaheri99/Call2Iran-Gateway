@@ -53,6 +53,7 @@ public class MainActivity extends Activity {
     private CheckBox chkTestMode;
     private Button btnToggleService;
     private Button btnSetDefaultDialer;
+    private Button btnNotificationAccess;
     private TextView txtState;
     private TextView txtChannel;
     private TextView txtLastPoll;
@@ -81,6 +82,7 @@ public class MainActivity extends Activity {
         chkTestMode = findViewById(R.id.chkTestMode);
         btnToggleService = findViewById(R.id.btnToggleService);
         btnSetDefaultDialer = findViewById(R.id.btnSetDefaultDialer);
+        btnNotificationAccess = findViewById(R.id.btnNotificationAccess);
         txtState = findViewById(R.id.txtState);
         txtChannel = findViewById(R.id.txtChannel);
         txtLastPoll = findViewById(R.id.txtLastPoll);
@@ -100,6 +102,7 @@ public class MainActivity extends Activity {
 
         serviceRunning = settings.isServiceRunning();
         updateToggleButton();
+        updateNotificationAccessButton();
 
         GatewayService service = GatewayService.getInstance();
         if (service != null) {
@@ -187,6 +190,11 @@ public class MainActivity extends Activity {
 
         btnSetDefaultDialer.setOnClickListener(v -> requestDefaultDialer());
 
+        btnNotificationAccess.setOnClickListener(v -> {
+            Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+            startActivity(intent);
+        });
+
         chkTestMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
             settings.setTestMode(isChecked);
         });
@@ -242,6 +250,18 @@ public class MainActivity extends Activity {
         updateToggleButton();
         txtState.setText("IDLE");
         txtChannel.setText("-");
+    }
+
+    private void updateNotificationAccessButton() {
+        if (BaleNotificationListener.isEnabled(this)) {
+            btnNotificationAccess.setText("Notification Access: GRANTED");
+            btnNotificationAccess.setBackgroundTintList(
+                    android.content.res.ColorStateList.valueOf(getColor(R.color.activeGreen)));
+        } else {
+            btnNotificationAccess.setText("Grant Notification Access");
+            btnNotificationAccess.setBackgroundTintList(
+                    android.content.res.ColorStateList.valueOf(getColor(R.color.errorRed)));
+        }
     }
 
     private void updateToggleButton() {

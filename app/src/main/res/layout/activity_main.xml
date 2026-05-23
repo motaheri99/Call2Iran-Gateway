@@ -255,6 +255,15 @@
             android:text="Set as Default Dialer"
             android:textColor="@color/textPrimary"
             android:fontFamily="monospace"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnNotificationAccess"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Grant Notification Access"
+            android:textColor="@color/textPrimary"
+            android:fontFamily="monospace"
             android:layout_marginBottom="24dp" />
 
         <!-- Status Section -->

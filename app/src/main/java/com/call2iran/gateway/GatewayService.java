@@ -96,10 +96,15 @@ public class GatewayService extends Service {
                 + " keyLen=" + (bKey != null ? bKey.length() : 0) + "/64");
 
         if (channelManager.isBaleConfigured()) {
-            logError("Bale configured — starting client");
-            channelManager.markStarted();
-            activeChannel = "Bale";
-            setupBaleClient();
+            if (!BaleNotificationListener.isEnabled(this)) {
+                logError("Bale configured but Notification Access not granted — falling back to Phone");
+                activeChannel = "Phone";
+            } else {
+                logError("Bale configured — listening via notifications");
+                channelManager.markStarted();
+                activeChannel = "Bale";
+                setupBaleClient();
+            }
         } else {
             String reason = "";
             if (bToken == null || bToken.isEmpty()) reason += "token empty; ";
