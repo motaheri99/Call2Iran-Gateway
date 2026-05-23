@@ -21,11 +21,11 @@
             android:gravity="center"
             android:paddingBottom="16dp" />
 
-        <!-- Settings Section -->
+        <!-- Phone Polling Settings -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="SETTINGS"
+            android:text="PHONE POLLING (FALLBACK)"
             android:textColor="@color/textSecondary"
             android:textSize="12sp"
             android:fontFamily="monospace"
@@ -123,6 +123,103 @@
                 android:ellipsize="middle" />
         </LinearLayout>
 
+        <!-- Bale Bot Settings -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="BALE BOT (PRIMARY)"
+            android:textColor="@color/activeGreen"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Bot Token"
+            android:textColor="@color/textPrimary"
+            android:textSize="14sp"
+            android:fontFamily="monospace" />
+
+        <EditText
+            android:id="@+id/editBaleBotToken"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="123456:ABCdefGHI..."
+            android:textColor="@color/textPrimary"
+            android:textColorHint="@color/textSecondary"
+            android:fontFamily="monospace"
+            android:inputType="text"
+            android:background="@color/surface"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Chat ID"
+            android:textColor="@color/textPrimary"
+            android:textSize="14sp"
+            android:fontFamily="monospace" />
+
+        <EditText
+            android:id="@+id/editBaleChatId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="1234567890"
+            android:textColor="@color/textPrimary"
+            android:textColorHint="@color/textSecondary"
+            android:fontFamily="monospace"
+            android:inputType="number"
+            android:background="@color/surface"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Encryption Key (64 hex chars)"
+            android:textColor="@color/textPrimary"
+            android:textSize="14sp"
+            android:fontFamily="monospace" />
+
+        <EditText
+            android:id="@+id/editBaleKey"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="abcdef0123456789..."
+            android:textColor="@color/textPrimary"
+            android:textColorHint="@color/textSecondary"
+            android:fontFamily="monospace"
+            android:inputType="textVisiblePassword"
+            android:background="@color/surface"
+            android:padding="12dp"
+            android:textSize="11sp"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Bale Timeout (minutes before fallback)"
+            android:textColor="@color/textPrimary"
+            android:textSize="14sp"
+            android:fontFamily="monospace" />
+
+        <EditText
+            android:id="@+id/editBaleTimeout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="30"
+            android:textColor="@color/textPrimary"
+            android:textColorHint="@color/textSecondary"
+            android:fontFamily="monospace"
+            android:inputType="number"
+            android:background="@color/surface"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Controls -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -200,6 +297,25 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:text="Channel:"
+                android:textColor="@color/textSecondary"
+                android:textSize="12sp"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:id="@+id/txtChannel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="-"
+                android:textColor="@color/activeGreen"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:fontFamily="monospace"
+                android:paddingBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:text="Last Poll:"
                 android:textColor="@color/textSecondary"
                 android:textSize="12sp"
@@ -255,7 +371,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="ERROR LOG"
+            android:text="LOG"
             android:textColor="@color/errorRed"
             android:textSize="12sp"
             android:fontFamily="monospace"

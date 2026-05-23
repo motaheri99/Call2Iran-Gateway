@@ -8,7 +8,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -32,13 +31,17 @@ public class GatewayService extends Service {
     private AppSettings settings;
     private PollManager pollManager;
     private CallBridgeManager callBridgeManager;
+    private BaleClient baleClient;
+    private ChannelManager channelManager;
     private Handler handler;
     private PowerManager.WakeLock wakeLock;
     private GatewayState currentState = GatewayState.IDLE;
 
+    private String currentCallId;
     private String lastPollTime = "-";
     private String lastJobInfo = "-";
     private String lastCallDuration = "-";
+    private String activeChannel = "-";
     private final StringBuilder errorLog = new StringBuilder();
     private int errorCount = 0;
 
@@ -47,7 +50,7 @@ public class GatewayService extends Service {
 
     public interface StatusUpdateListener {
         void onStatusUpdate(GatewayState state, String pollTime, String jobInfo,
-                            String duration, String errors);
+                            String duration, String errors, String channel);
     }
 
     public static GatewayService getInstance() {
@@ -62,6 +65,8 @@ public class GatewayService extends Service {
         handler = new Handler(Looper.getMainLooper());
         pollManager = new PollManager(this, settings);
         callBridgeManager = new CallBridgeManager(this, settings);
+        channelManager = new ChannelManager(settings);
+        baleClient = new BaleClient(settings);
 
         createNotificationChannel();
 
@@ -82,6 +87,14 @@ public class GatewayService extends Service {
             wakeLock.acquire();
         }
 
+        // Start Bale client if configured
+        if (channelManager.isBaleConfigured()) {
+            activeChannel = "Bale";
+            setupBaleClient();
+        } else {
+            activeChannel = "Phone";
+        }
+
         if (intent != null && ACTION_POLL_ALARM.equals(intent.getAction())) {
             Log.d(TAG, "Poll alarm triggered");
             executePoll();
@@ -89,7 +102,55 @@ public class GatewayService extends Service {
             schedulePoll();
         }
 
+        notifyStatusUpdate();
         return START_STICKY;
+    }
+
+    private void setupBaleClient() {
+        baleClient.setJobListener((callId, targetPhone, callerPhone, maxMinutes) -> {
+            Log.d(TAG, "Bale job received: " + callId);
+            channelManager.onBaleMessageReceived();
+            activeChannel = "Bale";
+
+            if (currentState != GatewayState.IDLE) {
+                logError("Bale job ignored — not idle (state=" + currentState + ")");
+                return;
+            }
+
+            lastJobInfo = targetPhone + " <-> " + callerPhone + " (" + maxMinutes + "min)";
+            currentCallId = callId;
+
+            // Strip +98 prefix and leading zero for Iran number format
+            String iranNum = targetPhone;
+            if (iranNum.startsWith("+98")) iranNum = "0" + iranNum.substring(3);
+
+            // Strip + prefix for international number
+            String intlNum = callerPhone;
+            if (intlNum.startsWith("+")) intlNum = intlNum.substring(1);
+
+            JobData job = new JobData(iranNum, intlNum, maxMinutes);
+
+            if (settings.isTestMode()) {
+                Log.d(TAG, "Test mode: auto-reporting fake 120s call for " + callId);
+                logError("[TEST] Bale job: " + job + " (callId: " + callId + ")");
+                handler.postDelayed(() -> {
+                    baleClient.sendReport(callId, 120);
+                    logError("[TEST] Fake report sent: 120s");
+                }, 10000);
+                return;
+            }
+
+            startBridge(job);
+        });
+
+        baleClient.setOnMessageCallback(() -> {
+            channelManager.onBaleMessageReceived();
+            activeChannel = "Bale";
+            notifyStatusUpdate();
+        });
+
+        baleClient.startPolling();
+        Log.d(TAG, "Bale client started");
     }
 
     @Override
@@ -102,6 +163,8 @@ public class GatewayService extends Service {
         if (pollManager.isPolling()) {
             pollManager.cancel();
         }
+
+        baleClient.stopPolling();
 
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
@@ -176,6 +239,16 @@ public class GatewayService extends Service {
             return;
         }
 
+        // If Bale is active, skip phone polling
+        if (channelManager.getActiveChannel() == ChannelManager.ActiveChannel.BALE) {
+            Log.d(TAG, "Bale is active, skipping phone poll");
+            activeChannel = "Bale";
+            notifyStatusUpdate();
+            schedulePoll();
+            return;
+        }
+
+        activeChannel = "Phone";
         setState(GatewayState.POLLING);
 
         lastPollTime = new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date());
@@ -189,6 +262,7 @@ public class GatewayService extends Service {
 
                 if (job != null) {
                     lastJobInfo = job.toString();
+                    currentCallId = null;
                     Log.d(TAG, "Job received: " + job);
                     notifyStatusUpdate();
                     startBridge(job);
@@ -221,8 +295,15 @@ public class GatewayService extends Service {
                     lastCallDuration = durationSeconds + "s";
                     Log.d(TAG, "Bridge complete. Duration: " + durationSeconds + "s");
 
-                    settings.savePendingDuration(durationSeconds);
+                    // Report via Bale if connected, else save for phone polling
+                    if (currentCallId != null && baleClient.isConnected()) {
+                        baleClient.sendReport(currentCallId, durationSeconds);
+                        Log.d(TAG, "Report sent via Bale for " + currentCallId);
+                    } else {
+                        settings.savePendingReport(currentCallId, durationSeconds);
+                    }
 
+                    currentCallId = null;
                     setState(GatewayState.IDLE);
                     notifyStatusUpdate();
                     schedulePoll();
@@ -236,7 +317,7 @@ public class GatewayService extends Service {
         updateNotification();
     }
 
-    private void logError(String error) {
+    public void logError(String error) {
         Log.e(TAG, error);
         errorCount++;
         String timestamp = new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date());
@@ -244,9 +325,9 @@ public class GatewayService extends Service {
         errorLog.insert(0, entry);
 
         String[] lines = errorLog.toString().split("\n");
-        if (lines.length > 10) {
+        if (lines.length > 20) {
             errorLog.setLength(0);
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 20; i++) {
                 errorLog.append(lines[i]).append("\n");
             }
         }
@@ -261,7 +342,8 @@ public class GatewayService extends Service {
                     lastPollTime,
                     lastJobInfo,
                     lastCallDuration,
-                    errorLog.toString()
+                    errorLog.toString(),
+                    activeChannel
             );
         }
     }
@@ -284,9 +366,11 @@ public class GatewayService extends Service {
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
+        String subtitle = "State: " + currentState.getLabel() + " | " + activeChannel;
+
         return new Notification.Builder(this, CHANNEL_ID)
                 .setContentTitle("Call Iran Gateway")
-                .setContentText("State: " + currentState.getLabel())
+                .setContentText(subtitle)
                 .setSmallIcon(android.R.drawable.stat_sys_phone_call)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
@@ -300,6 +384,10 @@ public class GatewayService extends Service {
 
     public GatewayState getCurrentState() {
         return currentState;
+    }
+
+    public ChannelManager getChannelManager() {
+        return channelManager;
     }
 
     public String getErrorLog() {

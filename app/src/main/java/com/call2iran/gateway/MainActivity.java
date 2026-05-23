@@ -44,12 +44,17 @@ public class MainActivity extends Activity {
     private EditText editTelnyxNumber;
     private EditText editPollInterval;
     private EditText editPhoneId;
+    private EditText editBaleBotToken;
+    private EditText editBaleChatId;
+    private EditText editBaleKey;
+    private EditText editBaleTimeout;
     private Button btnPickVoice;
     private TextView txtVoiceFile;
     private CheckBox chkTestMode;
     private Button btnToggleService;
     private Button btnSetDefaultDialer;
     private TextView txtState;
+    private TextView txtChannel;
     private TextView txtLastPoll;
     private TextView txtLastJob;
     private TextView txtLastDuration;
@@ -67,12 +72,17 @@ public class MainActivity extends Activity {
         editTelnyxNumber = findViewById(R.id.editTelnyxNumber);
         editPollInterval = findViewById(R.id.editPollInterval);
         editPhoneId = findViewById(R.id.editPhoneId);
+        editBaleBotToken = findViewById(R.id.editBaleBotToken);
+        editBaleChatId = findViewById(R.id.editBaleChatId);
+        editBaleKey = findViewById(R.id.editBaleKey);
+        editBaleTimeout = findViewById(R.id.editBaleTimeout);
         btnPickVoice = findViewById(R.id.btnPickVoice);
         txtVoiceFile = findViewById(R.id.txtVoiceFile);
         chkTestMode = findViewById(R.id.chkTestMode);
         btnToggleService = findViewById(R.id.btnToggleService);
         btnSetDefaultDialer = findViewById(R.id.btnSetDefaultDialer);
         txtState = findViewById(R.id.txtState);
+        txtChannel = findViewById(R.id.txtChannel);
         txtLastPoll = findViewById(R.id.txtLastPoll);
         txtLastJob = findViewById(R.id.txtLastJob);
         txtLastDuration = findViewById(R.id.txtLastDuration);
@@ -116,6 +126,11 @@ public class MainActivity extends Activity {
 
         editPhoneId.setText(settings.getPhoneId());
 
+        editBaleBotToken.setText(settings.getBaleBotToken());
+        editBaleChatId.setText(settings.getBaleChatId());
+        editBaleKey.setText(settings.getBaleEncryptionKey());
+        editBaleTimeout.setText(String.valueOf(settings.getBaleTimeout()));
+
         String voicePath = settings.getVoiceFilePath();
         if (!voicePath.isEmpty()) {
             File f = new File(voicePath);
@@ -142,6 +157,21 @@ public class MainActivity extends Activity {
         }
 
         settings.setPhoneId(editPhoneId.getText().toString().trim());
+        settings.setBaleBotToken(editBaleBotToken.getText().toString().trim());
+        settings.setBaleChatId(editBaleChatId.getText().toString().trim());
+        settings.setBaleEncryptionKey(editBaleKey.getText().toString().trim());
+
+        String timeoutStr = editBaleTimeout.getText().toString().trim();
+        if (!timeoutStr.isEmpty()) {
+            try {
+                int timeout = Integer.parseInt(timeoutStr);
+                if (timeout >= 1) {
+                    settings.setBaleTimeout(timeout);
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
         settings.setTestMode(chkTestMode.isChecked());
     }
 
@@ -168,8 +198,15 @@ public class MainActivity extends Activity {
         if (serviceRunning) {
             stopGatewayService();
         } else {
-            if (!settings.isTestMode() && settings.getTelnyxNumber().isEmpty()) {
-                Toast.makeText(this, "Set Telnyx number or enable Test Mode", Toast.LENGTH_LONG).show();
+            boolean hasTelnyx = !settings.getTelnyxNumber().isEmpty();
+            boolean hasBale = !settings.getBaleBotToken().isEmpty()
+                    && !settings.getBaleChatId().isEmpty()
+                    && settings.getBaleEncryptionKey().length() == 64;
+
+            if (!settings.isTestMode() && !hasTelnyx && !hasBale) {
+                Toast.makeText(this,
+                        "Set Bale bot or Telnyx number (or enable Test Mode)",
+                        Toast.LENGTH_LONG).show();
                 return;
             }
             startGatewayService();
@@ -199,6 +236,7 @@ public class MainActivity extends Activity {
         settings.setServiceRunning(false);
         updateToggleButton();
         txtState.setText("IDLE");
+        txtChannel.setText("-");
     }
 
     private void updateToggleButton() {
@@ -217,9 +255,11 @@ public class MainActivity extends Activity {
             new GatewayService.StatusUpdateListener() {
                 @Override
                 public void onStatusUpdate(GatewayState state, String pollTime,
-                                           String jobInfo, String duration, String errors) {
+                                           String jobInfo, String duration, String errors,
+                                           String channel) {
                     runOnUiThread(() -> {
                         txtState.setText(state.getLabel());
+                        txtChannel.setText(channel != null ? channel : "-");
                         txtLastPoll.setText(pollTime);
                         txtLastJob.setText(jobInfo);
                         txtLastDuration.setText(duration);

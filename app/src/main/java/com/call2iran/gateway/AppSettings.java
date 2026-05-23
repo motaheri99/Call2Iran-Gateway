@@ -14,8 +14,14 @@ public class AppSettings {
     private static final String KEY_TEST_MODE = "test_mode";
     private static final String KEY_PENDING_DURATION = "pending_duration";
     private static final String KEY_HAS_PENDING_REPORT = "has_pending_report";
+    private static final String KEY_PENDING_CALL_ID = "pending_call_id";
+    private static final String KEY_BALE_BOT_TOKEN = "bale_bot_token";
+    private static final String KEY_BALE_CHAT_ID = "bale_chat_id";
+    private static final String KEY_BALE_ENCRYPTION_KEY = "bale_encryption_key";
+    private static final String KEY_BALE_TIMEOUT = "bale_timeout";
 
     private static final int DEFAULT_POLL_INTERVAL = 30;
+    private static final int DEFAULT_BALE_TIMEOUT = 30;
     private static final String DEFAULT_PHONE_ID = "phone1";
 
     private final SharedPreferences prefs;
@@ -72,11 +78,20 @@ public class AppSettings {
         prefs.edit().putBoolean(KEY_TEST_MODE, testMode).apply();
     }
 
-    public void savePendingDuration(int durationSeconds) {
+    public void savePendingReport(String callId, int durationSeconds) {
         prefs.edit()
+                .putString(KEY_PENDING_CALL_ID, callId != null ? callId : "")
                 .putInt(KEY_PENDING_DURATION, durationSeconds)
                 .putBoolean(KEY_HAS_PENDING_REPORT, true)
                 .apply();
+    }
+
+    public void savePendingDuration(int durationSeconds) {
+        savePendingReport("", durationSeconds);
+    }
+
+    public String getPendingCallId() {
+        return prefs.getString(KEY_PENDING_CALL_ID, "");
     }
 
     public boolean hasPendingReport() {
@@ -91,6 +106,41 @@ public class AppSettings {
         prefs.edit()
                 .putBoolean(KEY_HAS_PENDING_REPORT, false)
                 .putInt(KEY_PENDING_DURATION, 0)
+                .putString(KEY_PENDING_CALL_ID, "")
                 .apply();
+    }
+
+    // ── Bale Bot settings ──────────────────────────────────────
+
+    public String getBaleBotToken() {
+        return prefs.getString(KEY_BALE_BOT_TOKEN, "");
+    }
+
+    public void setBaleBotToken(String token) {
+        prefs.edit().putString(KEY_BALE_BOT_TOKEN, token).apply();
+    }
+
+    public String getBaleChatId() {
+        return prefs.getString(KEY_BALE_CHAT_ID, "");
+    }
+
+    public void setBaleChatId(String chatId) {
+        prefs.edit().putString(KEY_BALE_CHAT_ID, chatId).apply();
+    }
+
+    public String getBaleEncryptionKey() {
+        return prefs.getString(KEY_BALE_ENCRYPTION_KEY, "");
+    }
+
+    public void setBaleEncryptionKey(String key) {
+        prefs.edit().putString(KEY_BALE_ENCRYPTION_KEY, key).apply();
+    }
+
+    public int getBaleTimeout() {
+        return prefs.getInt(KEY_BALE_TIMEOUT, DEFAULT_BALE_TIMEOUT);
+    }
+
+    public void setBaleTimeout(int minutes) {
+        prefs.edit().putInt(KEY_BALE_TIMEOUT, minutes).apply();
     }
 }
